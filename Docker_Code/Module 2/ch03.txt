@@ -1,0 +1,171 @@
+Multiple Containers over Single Host
+$ sudo wget -O /usr/local/bin/pipework https://raw.githubusercontent.com/jpetazzo/pipework/master/pipework && sudo chmod +x /usr/local/bin/pipework
+
+$ docker run -i -t --name c1 ubuntu:latest /bin/bash
+
+$ root@5afb44195a69:/# ifconfig
+
+$ docker run -i -t --name c2 ubuntu:latest /bin/bash
+
+$ root@c94d53a76a9b:/# ifconfig
+
+$ sudo pipework brpipe c1 192.168.1.1/24
+
+$ sudo pipework brpipe c2 192.168.1.2/24
+
+Weave your Contaiers
+$ sudo curl -L git.io/weave -o /usr/local/bin/weave 
+
+$ sudo chmod a+x /usr/local/bin/weave
+
+$ weave launch && weave launch-dns && weave launch-proxy
+
+$ eval $(weave proxy-env) 
+
+$ docker run --name c1 -ti ubuntu
+
+$ weave launch $HOST1 && weave launch-dns && weave launch-proxy 
+$ eval $(weave proxy-env) 
+$ docker run --name c2 -ti ubuntu
+
+$ root@c1:/# ifconfig
+
+$ root@c2:/# ifconfig
+
+$ root@c1:/# ping -c 1 -q c2
+
+$ root@c2:/# ping -c 1 -q c1
+
+OVS Single Host
+$ sudo apt-get install openvswitch-switch
+
+$ cd /usr/bin 
+
+$ sudo wget https://raw.githubusercontent.com/openvswitch/ovs/master/utilities/ovs-docker
+
+$ sudo chmod a+rwx ovs-docker
+
+$ sudo ovs-vsctl add-br ovs-br1
+
+$ sudo ifconfig ovs-br1 173.16.1.1 netmask 255.255.255.0 up
+
+$ docker run -i -t --name container1 ubuntu /bin/bash
+
+$ docekr run -i -t --name container2 ubuntu /bin/bash
+
+$ sudo ovs-docker add-port ovs-br1 eth1 container1 --ipaddress=173.16.1.2/24
+
+$ sudo ovs-docker add-port ovs-br1 eth1 container2 --ipaddress=173.16.1.3/24
+
+$ docker exec container1 ifconfig 
+
+$ docker exec container2 ifconfig 
+
+$ root@b4a1d0f3ef58:/# ping -c 1 -q container1
+
+$ root@31b47b2fce59:/# ping -c 1 -q container2
+
+OVS Multiple Host
+$ sudo wget -qO- https://get.docker.com/ | sh
+
+$ sudo apt-get install openvswitch-switch
+
+$ cd /usr/bin 
+
+$ sudo wget https://raw.githubusercontent.com/openvswitch/ovs/master/utilities/ovs-docker
+
+$ sudo chmod a+rwx ovs-docker
+
+$ sudo service docker stop
+
+$ sudo iptables -t nat -F POSTROUTING
+
+$ sudo ip link set dev docker0 down
+
+$ sudo ip addr del 172.17.42.1/16 dev docker0
+
+$ sudo ip addr add 192.168.10.1/24 dev docker0
+
+$ sudo ip link set dev docker0 up
+
+$ sudo ip addr show docker0
+
+$ sudo service docker start
+
+$ sudo ovs-vsctl add-br br0
+
+$ sudo br0 bridge ovs-vsctl add-port br0 gre0 -- set interface gre0 type=gre options:remote_ip=30.30.30.8
+
+$ sudo brctl addif docker0 br0
+
+$ sudo service docker stop
+
+$ sudo iptables -t nat -F POSTROUTING
+
+$ sudo ip link set dev docker0 down
+
+$ sudo ip addr del 172.17.42.1/16 dev docker0
+
+$ sudo ip addr add 192.168.10.2/24 dev docker0
+
+$ sudo ip link set dev docker0 up
+
+$ sudo ip addr show docker0
+
+$ sudo service docker start
+
+$ sudo ovs-vsctl add-br br0
+
+$ sudo br0 bridge ovs-vsctl add-port br0 gre0 -- set interface gre0 type=gre options:remote_ip=30.30.30.7
+
+$ sudo brctl addif docker0 br0
+
+On Host1
+
+$ ping 192.168.10.2
+
+On Host2
+
+$ ping 192.168.10.1
+
+On Host1
+
+$ docker run -t -i --name container1 ubuntu:latest /bin/bash
+
+On Host2 # docker run -t -i --name container2 ubuntu:latest /bin/bash
+
+Networking with Overlay Networks-Flannel
+$ sudo git clone https://github.com/coreos/flannel.git 
+
+$ sudo docker run -v `pwd`:/opt/flannel -i -t google/golang /bin/bash -c "cd /opt/flannel && ./build"
+
+$ ifconfig flannel0
+
+$ sudo cat /run/flannel/subnet.env
+
+$ sudo source /run/flannel/subnet.env 
+
+$ sudo rm /var/run/docker.pid 
+
+$ sudo ifconfig docker0 ${FLANNEL_SUBNET} 
+
+$ sudo docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} &
+
+$ sudo cat /run/flannel/subnet.env
+
+$ sudo source /run/flannel/subnet.env # sudo ifconfig docker0 ${FLANNEL_SUBNET} # sudo docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} &
+
+$ docker run -it ubuntu /bin/bash
+
+$ root@1d1582111801:/# ifconfig
+
+$ docker run -it ubuntu /bin/bash
+
+$ root@ed070166624a:/# ifconfig
+
+$ root@ed070166624a:/# ping 10.1.30.2
+
+
+
+
+

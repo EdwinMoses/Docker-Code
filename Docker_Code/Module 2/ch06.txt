@@ -1,0 +1,156 @@
+# Using Overlay Network with Vagrant 
+
+$ git clone https://github.com/docker/libnetwork.git 
+
+$ cd libnetwork/docs 
+
+$ vagrant up 
+
+$ vagrant status 
+
+$ vagrant ssh net-1 
+
+$ docker run -it --rm ubuntu:14.04 bash 
+
+   root@65db9144c65b:/# cat /etc/hosts 
+
+vagrant@net-1:~$ docker network create -d overlay tester 
+
+vagrant@net-1:~$ docker network ls 
+
+$ docker run -it --rm --publish-service=bar.tester.overlay ubuntu:14.04 bash 
+
+# Overlay Network with Docker Machine and Docker Swarm 
+
+$ docker-machine create -d virtualbox mh-keystore 
+
+$ docker $(docker-machine config mh-keystore) run -d -p "8500:8500" -h "consul" progrium/consul -server –bootstrap 
+
+$ eval "$(docker-machine env mh-keystore)" 
+
+$ docker ps 
+
+# Create a Swarm cluster with Two Nodes 
+
+$ docker-machine create -d virtualbox --swarm --swarm-master --swarm-discovery="consul://$(docker-machine ip mh-keystore):8500" --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" --engine-opt="cluster-advertise=eth1:2376" mhs-demo0 
+
+$ docker-machine create -d virtualbox --swarm --swarm-discovery="consul://$(docker-machine ip mh-keystore):8500" --engine-opt="cluster-store=consul://$(docker-machine ip mh-keystore):8500" --engine-opt="cluster-advertise=eth1:2376" mhs-demo1 
+
+$ docker-machine ls 
+
+# Create Overlay network
+
+$ docker network create --driver overlay my-net 
+
+$ docker network ls 
+
+$ eval $(docker-machine env mhs-demo0) 
+
+$ docker network ls 
+
+$ eval $(docker-machine env mhs-demo1)
+
+$ docker network ls 
+
+# Create Containers using Overlay network
+
+$ eval $(docker-machine env mhs-demo0)
+
+root@843b16be1ae1:/#
+
+$ sudo docker run -i -t --name=c0 --net=my-net debian /bin/bash 
+
+root@843b16be1ae1:/# ifconfig 
+
+$ eval $(docker-machine env mhs-demo1)
+
+$ sudo docker run -i -t --name=c1 --net=my-net debian /bin/bash 
+
+   root@2ce83e872408:/# ifconfig 
+
+   root@2ce83e872408:/# ping 10.0.04 
+
+# Container Network Interface (CNI) 
+
+$ wget https://storage.googleapis.com/golang/go1.5.2.linux-amd64.tar.gz
+
+$ tar -C /usr/local -xzf go1.5.2.linux-amd64.tar.gz
+
+$ export PATH=$PATH:/usr/local/go/bin
+
+$ go version
+
+$ sudo apt-get install jq 
+
+$ git clone https://github.com/appc/cni.git 
+
+$ mkdir -p /etc/cni/net.d
+
+$ cat >/etc/cni/net.d/10-mynet.conf <<EOF
+
+> {
+
+> "name": "mynet",
+
+> "type": "bridge",
+
+> "bridge": "cni0",
+
+> "isGateway": true,
+
+> "ipMasq": true,
+
+> "ipam": {
+
+> "type": "host-local",
+
+> "subnet": "10.22.0.0/16",
+
+> "routes": [
+
+> { "dst": "0.0.0.0/0" }
+
+> ]
+
+> }
+
+> }
+
+> EOF 
+
+$ ./build 
+
+$ sudo CNI_PATH=$CNI_PATH ./priv-net-run.sh ifconfig 
+
+$ sudo CNI_PATH=$CNI_PATH ./docker-run.sh --rm busybox:latest /bin/ifconfig 
+
+# Project Calico’s Libnetwork Driver 
+
+$ calicoctl 
+
+$ curl -L https://github.com/coreos/etcd/releases/download/v2.2.1/etcd-v2.2.1-linux-amd64.tar.gz -o etcd-v2.2.1-linux-amd64.tar.gz 
+
+$ cd etcd-v2.2.1-linux-amd64 
+
+$ ./etcd 
+
+$ service docker stop 
+
+$ docker daemon --cluster-store=etcd://0.0.0.0:2379 
+
+$ ./calicoctl node --libnetwork 
+
+$ docker ps 
+
+$ docker network create –d calico net1
+
+$ docker network ls 
+
+$ docker run --net=net1 -itd --name=container1 busybox 
+
+$ docker ps 
+
+$ docker attach container-id
+
+   # ifconfig 
+

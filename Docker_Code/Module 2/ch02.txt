@@ -1,0 +1,103 @@
+
+Assigning fixed IP range
+$ sudo docker –d --fixed-cidr=192.168.1.0/25 
+
+$ sudo docker -H tcp://127.0.0.1:2375 -H unix:///var/run/docker.sock -d &
+
+$ docker –d --ipv6 --fixed-cidr-v6="1553:ba3:2::/64"
+
+$ docker run -t -i --name c0 ubuntu:latest /bin/bash 
+
+$ ifconfig
+
+Command to DNS server and hostname
+$ docker run --dns=8.8.8.8 --net="bridge" -t -i  ubuntu:latest /bin/bash 
+
+$ docker run --dns=8.8.8.8 --hostname=docker-vm1  -t -i  ubuntu:latest /bin/bash
+
+$ docker –d --ip-forward=true 
+
+$sudo sysctl net.ipv.conf.all.forwarding 
+net.ipv4.conf.all.forwarding = 0 
+
+$ sysctl net.ipv4.conf.all.forwarding=1 
+
+$ sysctl net.ipv4.conf.all.forwarding 
+net.ipv4.conf.all.forwarding = 1 
+
+$ sudo iptables –I DOCKER –I ext_if ! –s 10.10.10.10 –j DROP
+
+$ docker run -i -t --name c1 ubuntu:latest /bin/bash
+
+$ docker run -i -t --name c2 ubuntu:latest /bin/bash
+
+$ root@7bc2b6cb1025:/# ping 172.17.0.6 
+
+$ root@e58a9bf7120b:/# ping 172.17.0.5 
+
+$ sudo apt-get install openssh-server
+
+$ iptables -L -n 
+
+$ sudo service docker stop 
+
+Enable IP tables
+$ sudo vi /etc/default/docker
+
+$ DOCKER="/usr/local/bin/docker"
+
+$ DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
+
+$ DOCKER_OPTS="--icc=false --iptables=true"
+
+$ sudo service docker start 
+
+Inspect IPtables
+$ iptables -L -n
+
+Linking Containers
+$ docker run -i -t -p 2222:22 --name sshserver ubuntu bash
+
+$ iptables -L -n 
+
+$ docker run -i -t --name sshclient --link sshserver:sshserver ubuntu bash
+
+$ iptables -L -n 
+
+$ docker inspect -f "{{ .HostConfig.Links }}" sshclient [/sshserver:/sshclient/sshserver]
+
+$ sudo ssh root@172.17.0.3 –p 22
+
+Docker Bridge Configuration
+$ ifconfig 
+
+$ sudo apt-get install bridge-utils
+
+$ brctl show 
+
+$ docker run -t -i --name container1 ubuntu:latest /bin/bash
+$ ip route
+
+Changing Docker bridge from docker0 to br0
+$ sudo service docker stop 
+
+$ sudo ip link set dev docker0 down 
+
+$ sudo brctl delbr docker0 
+
+$ sudo iptables -t nat -F POSTROUTING 
+
+$ echo 'DOCKER_OPTS="-b=br0"' >> /etc/default/docker 
+
+$ sudo brctl addbr br0 
+
+$ sudo ip addr add 192.168.10.1/24 dev br0 
+
+$ sudo ip link set dev br0 up 
+
+$ sudo service docker start
+
+$ ifconfig
+
+
+

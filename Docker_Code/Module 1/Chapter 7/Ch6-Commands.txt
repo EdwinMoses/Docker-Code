@@ -1,0 +1,83 @@
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+A brief overview of container networking
+
+$ ifconfig docker0
+
+$ sudo docker run -i -t ubuntu:14.04 /bin/bash
+root@4b0b567b6019:/# ifconfig
+
+$ sudo docker inspect 4b0b567b6019
+
+$ sudo docker inspect \
+--format='{{.NetworkSettings.IPAddress}}' 4b0b567b6019
+172.17.0.12
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Envisaging the Container as a Service
+
+Building an HTTP server image
+
+$ sudo docker build -t apache2 .
+
+$ sudo docker images
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Running the HTTP server Image as a Service
+
+$ sudo docker run -d apache2
+9d4d3566e55c0b8829086e9be2040751017989a47b5411c9c4f170ab865afcef
+
+$ sudo docker logs \
+9d4d3566e55c0b8829086e9be2040751017989a47b5411c9c4f170ab865afcef
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Connecting to the HTTP service
+
+$ sudo docker inspect \
+--format='{{.NetworkSettings.IPAddress}}' \
+9d4d3566e55c0b8829086e9be2040751017989a47b5411c9c4f170ab865afcef
+
+$ wget -qO - 172.17.0.13
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Publishing container ports – the -p option
+
+$ sudo docker run -d -p 80:80 apache2
+baddba8afa98725ec85ad953557cd0614b4d0254f45436f9cb440f3f9eeae134
+
+$ sudo iptables -t nat -L -n
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Retrieving the container port
+
+$ sudo docker ps
+
+$ sudo docker inspect baddba8afa98
+
+
+$ sudo docker port baddba8afa98 80
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Binding a container to a specific IP address
+
+$ sudo docker run -d -p 198.51.100.73:80:80 apache2
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Auto-generating the Docker host port
+
+$ sudo docker run -d -p 80:80 apache2
+
+$ sudo docker run -d -p 80 apache2
+
+$ sudo docker run -d -p 198.51.100.73::80 apache2
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Port binding using EXPOSE and the -P option
+
+$ sudo docker build -t apache2 .
+
+$ sudo docker inspect apache2
+
+$ sudo docker inspect --format='{{.Config.ExposedPorts}}' \
+apache2
+
+$ sudo docker run -d -P apache2
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+

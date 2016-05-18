@@ -1,0 +1,191 @@
+# Docker Swarm Setup
+
+$ docker -H tcp://0.0.0.0:2375 -H unix:///var/run/docker.sock –d & 
+
+$ sudo docker -H tcp://IP-addr:2375 run --rm swarm create 
+
+$ docker -H tcp://IP-addr:2375 run -d swarm join --addr=IP-addr:2375 token://token-id
+
+$ sudo docker -H tcp://IP-addr:2375 run -d -p 5001:2375 swarm manage token://token-id
+
+$ sudo docker -H tcp://IP-addr:2375 run --rm swarm list \ token://token-id 
+
+$ sudo docker -H tcp://IP-addr:5001 info 
+
+$ sudo docker -H tcp://IP-addr:5001 run -it --name swarm-ubuntu ubuntu /bin/sh 
+
+$ sudo docker -H tcp://IP-addr:5001 ps 
+
+# Docker Swarm Networking
+
+$ docker-machine create -d virtualbox sample-keystore 
+
+$ docker $(docker-machine config sample-keystore) run -d -p "8500:8500" -h "consul" progrium/consul -server –bootstrap 
+
+$ eval "$(docker-machine env sample-keystore)” 
+
+$ docker ps 
+
+$ docker-machine create -d virtualbox --swarm --swarm-image="swarm" --swarm-master --swarm-discovery="consul://$(docker-machine ip sample-keystore):8500" --engine-opt="cluster-store=consul://$(docker-machine ip sample-keystore):8500" --engine-opt="cluster-advertise=eth1:2376" swarm-master 
+
+$ docker-machine create -d virtualbox --swarm --swarm-image="swarm:1.0.0-rc2" --swarm-discovery="consul://$(docker-machine ip sample-keystore):8500" --engine-opt="cluster-store=consul://$(docker-machine ip sample-keystore):8500" --engine-opt="cluster-advertise=eth1:2376" swarm-node-1 
+
+$ docker-machine ls 
+
+$ eval $(docker-machine env --swarm swarm-master) 
+
+$ docker network create –driver overlay sample-net 
+
+$ docker network ls 
+
+$ eval $(docker-machine env swarm-master) 
+
+$ docker run -itd --name=os --net=sample-net --env="constraint:node==swarm-master" ubuntu 
+
+# Kubernetes Deployment on AWS 
+
+$ sudo pip install awscli 
+
+$ aws configure 
+
+$ aws iam create-instance-profile --instance-profile-name Kube 
+
+$ aws iam create-role --role-name Test-Role --assume-role-policy-document /root/kubernetes/Test-Role-Trust-Policy.json 
+
+$ aws iam add-role-to-instance-profile --role-name Test-Role --instance-profile-name Kube 
+
+$ export AWS_DEFAULT_PROFILE=Kube 
+
+$ export KUBERNETES_PROVIDER=aws; wget -q -O - https://get.k8s.io | bash 
+
+# Kubernetes Pod Deployment 
+
+$ mkdir nginx_kube_example
+
+$ cd nginx_kube_example 
+
+$ vi nginx_pod.yaml 
+
+$ kubectl create -f nginx_pod.yaml 
+
+$ kubectl get pods 
+
+$ docker ps 
+
+$ vi nginx_service.yaml 
+
+$ kubectl create -f nginx_service.yaml 
+
+$ kubectl create -f nginx_service.yaml 
+
+# Mesosphere
+
+$ sudo rpm -Uvh http://repos.mesosphere.com/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm 
+
+$ sudo yum -y install mesos marathon 
+
+$ sudo rpm -Uvh http://archive.cloudera.com/cdh4/one-click-install/redhat/6/x86_64/cloudera-cdh-4-0.x86_64.rpm
+
+$ sudo yum -y install zookeeper zookeeper-server 
+
+$ sudo service zookeeper-server stop
+
+$ sudo service zookeeper-server start 
+
+$ sudo service mesos-master start
+
+$ sudo service mesos-slave start 
+
+$ export MASTER=$(mesos-resolve `cat /etc/mesos/zk` 2>/dev/null)
+
+$ mesos help
+
+$ mesos-execute --master=$MASTER --name="cluster-test" --command="sleep 40" 
+
+$ mesos ps --master=$MASTER 
+
+$ sudo service marathon start 
+
+# Deploying a webapp using Docker 
+ 
+$ sudo yum install -y golang git device-mapper-event-libs docker
+
+$ sudo chkconfig docker on
+
+$ sudo service docker start
+
+$ export GOPATH=~/go
+
+$ go get github.com/golang/example/outyet
+
+$ cd $GOPATH/src/github.com/golang/example/outyet
+
+$ sudo docker build -t outyet . 
+
+$ sudo docker run --publish 6060:8080 --name test --rm outyet 
+
+$ vi /home/user/outyet.json 
+
+$ echo 'docker,mesos' | sudo tee /etc/mesos-slave/containerizers
+
+$ sudo service mesos-slave restart 
+
+$ curl -X POST http://Ip-addr:8080/v2/apps -d /home/user/outyet.json -H "Content-type: application/json" 
+
+# Mesos Deployment on AWS using DCOS 
+
+$ sudo pip install virtualenv
+
+$ mkdir dcos
+
+$ cd dcos
+
+$ curl -O https://downloads.mesosphere.io/dcos-cli/install.sh 
+
+$ bash install.sh . http://mesos-dco-elasticl-17lqe4oh09r07-1358461817.us-west-1.elb.amazonaws.com 
+
+$ source ~/.bashrc && dcos help 
+
+$ dcos config show package.sources 
+
+$ dcos package update 
+
+$ dcos package search 
+
+$ dcos package install spark 
+
+$ nano definition.json
+
+{
+
+"container": {
+
+"type": "DOCKER",
+
+"docker": {
+
+"image": "superguenter/demo-app"
+
+}
+
+},
+
+"cmd": "python -m SimpleHTTPServer $PORT",
+
+"id": "demo",
+
+"cpus": 0.01,
+
+"mem": 256,
+
+"ports": [3000]
+
+} 
+
+$ dcos marathon app add definition.json
+
+$ dcos marathon app list 
+
+$ dcos marathon app update --force demo instances=3 
+
+$ dcos marathon deployment list 
